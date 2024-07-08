@@ -30,6 +30,8 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
+
+// 注册组件
 app.use(Button)
 app.use(Cell)
 app.use(CellGroup)
@@ -47,4 +49,5 @@ app.use(SwipeCell)
 app.use(Checkbox)
 app.use(Popover)
 app.use(PullRefresh)
+
 app.mount('#app')

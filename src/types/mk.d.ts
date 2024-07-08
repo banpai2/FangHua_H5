@@ -2,7 +2,7 @@ declare const mk: {
   queryUser: () => MkUser
   updateUser: (user: MkUser) => void
   getAreaColumns: () => Promise<AreaColumns>
-  pickerPhoto: () => string
+  pickerPhoto: () => Promise<string>
   pickerCamera: () => string
   vibrator: () => MkUser
 }

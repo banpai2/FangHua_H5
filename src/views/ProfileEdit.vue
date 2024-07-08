@@ -168,7 +168,7 @@ const submitData = async () => {
       >
       </van-image>
       <div class="avatar-btn">
-        <span @click="showAvatarSheet = true">修改头像</span>
+        <span @click="showAvatarSheet = true">修改头像咯</span>
       </div>
     </div>
 
