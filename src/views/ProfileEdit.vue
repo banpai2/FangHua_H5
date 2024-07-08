@@ -1,14 +1,52 @@
 <script setup lang="ts">
-import type { ActionSheetAction } from 'vant'
+import { request } from '@/api'
+import { closeToast, showLoadingToast, type ActionSheetAction } from 'vant'
 import { onMounted } from 'vue'
 import { ref } from 'vue'
 
+import b64ToBlob from 'b64-to-blob'
+
 // 控制 头像选择
 const showAvatarSheet = ref(false)
-const selectItem = (data: ActionSheetAction) => {
+const selectItem = async (data: ActionSheetAction) => {
   // console.log(data.name)
   if (data.name == '相册') {
     console.log('从相册选择')
+    // 格式：base64
+    const res = await mk.pickerPhoto()
+    // console.log(res)
+
+    // base64 转 blob
+    const blob = b64ToBlob(res, 'image/jpeg')
+    // console.log(blob)
+
+    // 创建 FormData 对象 添加图片信息 为提交做准备
+    const formData = new FormData()
+    // 参数 1：key 根据接口文档来设置
+    // 参数 2：提交的图片
+    // 参数 3：图片的文件名  Date.now()防止聪明
+    formData.append('file', blob, Date.now() + '.jpeg')
+
+    // 提交数据
+    const uploadRes = await request<MkResponse<{ avatar: string }>>({
+      url: '/member/profile/avatar',
+      method: 'post',
+      // formData直接将 formData 对象设置给 data 即可
+      // formData 中默认就是键值对
+      data: formData
+    })
+
+    // console.log(uploadRes.data.result.avatar)
+
+    // 本地更新
+    profile.value.avatar = uploadRes.data.result.avatar
+
+    // 获取 用户信息-》更改-》同步给鸿蒙端
+    const user = mk.queryUser()
+    user.avatar = uploadRes.data.result.avatar
+    mk.updateUser(user)
+
+    // console.log(res)
   } else if (data.name == '拍照') {
     console.log('从相机拍照')
   }
@@ -37,7 +75,10 @@ const selectedArea = (data: { selectedIndexes: number[] }) => {
   console.log(data.selectedIndexes)
   showAreaPop.value = false
 }
-// 选择职业
+
+// 控制职业的弹层
+// 这个职业列表不用改，可以不用 ref 定义为状态变量
+// 不定义为状态变量，性能的消耗 小一丢丢
 const columns = [
   { text: '软件工程师', value: '软件工程师' },
   { text: '医生', value: '医生' },
@@ -50,11 +91,31 @@ const columns = [
   { text: '护士', value: '护士' },
   { text: '机械工程师', value: '机械工程师' }
 ]
-const showProfessionPopup = ref(false)
-const onChangeProfession = (data: { selectedValues: string[] }) => {
-  console.log(data)
-  showProfessionPopup.value = false
+const showJobPop = ref(false)
+const selectedJob = (data: { selectedValues: string[] }) => {
+  console.log(data.selectedValues)
+  showJobPop.value = false
 }
+
+// 获取用户信息
+const profile = ref<ProfileInfo>({} as ProfileInfo)
+onMounted(async () => {
+  // 开启 loading
+  showLoadingToast({
+    message: '拼命加载中',
+    // 点击 蒙版不关闭
+    forbidClick: true
+  })
+  // get可以省略请求方法不写
+  const res = await request<MkResponse<ProfileInfo>>({
+    url: '/member/profile'
+  })
+  // console.log(res.data.result)
+  profile.value = res.data.result
+
+  // 关闭loading
+  closeToast()
+})
 </script>
 
 <template>
@@ -67,7 +128,7 @@ const onChangeProfession = (data: { selectedValues: string[] }) => {
         width="100"
         height="100"
         class="avatar-img"
-        src="https://foruda.gitee.com/avatar/1716533299289369832/5539886_yjh8866_1716533299.png"
+        :src="profile.avatar"
         @click="showAvatarSheet = true"
       >
       </van-image>
@@ -79,11 +140,11 @@ const onChangeProfession = (data: { selectedValues: string[] }) => {
     <!-- 中间表单部分 -->
     <van-cell-group>
       <!-- 输入框 readonly 只读 -->
-      <van-field label="账号" readonly></van-field>
-      <van-field label="昵称" placeholder="请输入昵称"></van-field>
+      <van-field v-model="profile.account" label="账号" readonly></van-field>
+      <van-field v-model="profile.nickname" label="昵称" placeholder="请输入昵称"></van-field>
       <van-cell title="性别" class="gender">
         <!-- 单选 -->
-        <van-radio-group :icon-size="16">
+        <van-radio-group v-model="profile.gender" :icon-size="16">
           <van-radio name="男">男</van-radio>
           <van-radio name="女">女</van-radio>
           <van-radio name="未知">未知</van-radio>
@@ -92,6 +153,7 @@ const onChangeProfession = (data: { selectedValues: string[] }) => {
       <!--  readonly 只读 -->
       <van-field
         @click="showDatePop = true"
+        v-model="profile.birthday"
         label="生日"
         readonly
         placeholder="请选择日期"
@@ -101,12 +163,14 @@ const onChangeProfession = (data: { selectedValues: string[] }) => {
         label="所在地"
         readonly
         placeholder="请选择所在地"
+        v-model="profile.fullLocation"
       ></van-field>
       <van-field
-        @click="showProfessionPopup = true"
+        @click="showJobPop = true"
         label="职业"
         readonly
         placeholder="请选择职业"
+        v-model="profile.profession"
       ></van-field>
     </van-cell-group>
 
@@ -136,7 +200,11 @@ const onChangeProfession = (data: { selectedValues: string[] }) => {
     />
   </van-popup>
 
-  <!-- 省市区的弹框 -->
+  <!-- 省市区的弹框 
+    van-popup:实现了弹出效果
+    支持让开发者用插槽传递进去：目前的写法是 默认插槽
+    类比于鸿蒙 尾随闭包 
+  -->
   <van-popup v-model:show="showAreaPop" position="bottom" :style="{ paddingBottom: '20px' }">
     <van-area
       title="标题"
@@ -146,13 +214,8 @@ const onChangeProfession = (data: { selectedValues: string[] }) => {
     />
   </van-popup>
 
-  <!-- 打开选择职业弹层 -->
-  <van-popup v-model:show="showProfessionPopup" round position="bottom">
-    <van-picker
-      :columns="columns"
-      @confirm="onChangeProfession"
-      @cancel="showProfessionPopup = false"
-    />
+  <van-popup v-model:show="showJobPop" position="bottom" :style="{ paddingBottom: '20px' }">
+    <van-picker :columns="columns" @cancel="showJobPop = false" @confirm="selectedJob" />
   </van-popup>
 </template>
 
