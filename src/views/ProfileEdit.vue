@@ -15,41 +15,49 @@ const selectItem = async (data: ActionSheetAction) => {
     // 格式：base64
     const res = await mk.pickerPhoto()
     // console.log(res)
-
-    // base64 转 blob
-    const blob = b64ToBlob(res, 'image/jpeg')
-    // console.log(blob)
-
-    // 创建 FormData 对象 添加图片信息 为提交做准备
-    const formData = new FormData()
-    // 参数 1：key 根据接口文档来设置
-    // 参数 2：提交的图片
-    // 参数 3：图片的文件名  Date.now()防止聪明
-    formData.append('file', blob, Date.now() + '.jpeg')
-
-    // 提交数据
-    const uploadRes = await request<MkResponse<{ avatar: string }>>({
-      url: '/member/profile/avatar',
-      method: 'post',
-      // formData直接将 formData 对象设置给 data 即可
-      // formData 中默认就是键值对
-      data: formData
-    })
-
-    // console.log(uploadRes.data.result.avatar)
-
-    // 本地更新
-    profile.value.avatar = uploadRes.data.result.avatar
-
-    // 获取 用户信息-》更改-》同步给鸿蒙端
-    const user = mk.queryUser()
-    user.avatar = uploadRes.data.result.avatar
-    mk.updateUser(user)
-
+    uploadAvatar(res)
     // console.log(res)
   } else if (data.name == '拍照') {
     console.log('从相机拍照')
+    const res = await mk.pickerCamera()
+    uploadAvatar(res)
   }
+}
+
+const uploadAvatar = async (res: string) => {
+  showLoadingToast({ message: '上传中', forbidClick: true })
+  // base64 转 blob
+  const blob = b64ToBlob(res, 'image/jpeg')
+  // console.log(blob)
+
+  // 创建 FormData 对象 添加图片信息 为提交做准备
+  const formData = new FormData()
+  // 参数 1：key 根据接口文档来设置
+  // 参数 2：提交的图片
+  // 参数 3：图片的文件名  Date.now()防止聪明
+  formData.append('file', blob, Date.now() + '.jpeg')
+
+  // 提交数据
+  const uploadRes = await request<MkResponse<{ avatar: string }>>({
+    url: '/member/profile/avatar',
+    method: 'post',
+    // formData直接将 formData 对象设置给 data 即可
+    // formData 中默认就是键值对
+    data: formData
+  })
+
+  // console.log(uploadRes.data.result.avatar)
+
+  // 本地更新
+  profile.value.avatar = uploadRes.data.result.avatar
+
+  // 获取 用户信息-》更改-》同步给鸿蒙端
+  const user = mk.queryUser()
+  user.avatar = uploadRes.data.result.avatar
+  mk.updateUser(user)
+
+  // 关闭
+  closeToast()
 }
 
 // 控制生日选择
@@ -58,6 +66,8 @@ const currentDate = ref(['1982', '02', '02'])
 const selectedDate = (data: { selectedValues: string[] }) => {
   console.log(data.selectedValues)
   showDatePop.value = false
+  // 年月日拼接到一起 设置给输入框
+  profile.value.birthday = data.selectedValues.join('-')
 }
 
 // 控制所在地组件的显示
