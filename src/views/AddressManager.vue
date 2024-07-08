@@ -1,22 +1,42 @@
 <script setup lang="ts">
 import { request } from '@/api'
+import { showToast } from 'vant'
 import { onMounted, ref } from 'vue'
 
 // 列表数据
 const addressList = ref<AddressItem[]>([])
 
-onMounted(async () => {
+const getData = async () => {
   const res = await request<MkResponse<AddressItem[]>>({
     url: '/member/address'
   })
-  console.log(res.data)
+  // console.log(res.data)
   addressList.value = res.data.result
+}
+
+onMounted(async () => {
+  getData()
 })
+
+// 设置为默认
+// 点击事件-》调用接口-》更新服务器数据-》更新页面数据
+const setDefault = async (id: string) => {
+  await request({
+    url: '/member/address/' + id,
+    method: 'put',
+    data: {
+      isDefault: 0 // 0默认
+    }
+  })
+  showToast('修改完毕')
+  getData()
+}
 </script>
 
 <template>
   <div class="address-manager-page">
     <van-swipe-cell v-for="item in addressList" :key="item.id">
+      <!-- 默认的内容（默认插槽） -->
       <div class="item">
         <div class="item-wrapper">
           <div class="item-area">
@@ -30,8 +50,11 @@ onMounted(async () => {
           <van-icon name="edit" size="20" color="var(--mk-gray)"></van-icon>
         </div>
       </div>
+      <!-- 设置给滑动区域的内容（插槽有名字--具名插槽） -->
       <template #right>
-        <van-button square type="primary" style="height: 100%"> 设为<br />默认 </van-button>
+        <van-button @click="setDefault(item.id)" square type="primary" style="height: 100%">
+          设为<br />默认
+        </van-button>
         <van-button square type="danger" style="height: 100%" text="删除" />
       </template>
     </van-swipe-cell>
