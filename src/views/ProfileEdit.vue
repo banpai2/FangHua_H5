@@ -81,9 +81,15 @@ onMounted(async () => {
   // console.log(res)
   areaData.value = res
 })
-const selectedArea = (data: { selectedIndexes: number[] }) => {
-  console.log(data.selectedIndexes)
+const selectedArea = (data: { selectedValues: string[] }) => {
+  // console.log(data.selectedIndexes)
   showAreaPop.value = false
+  // console.log(data)
+  const pName = areaData.value.province_list[parseInt(data.selectedValues[0])]
+  const cityName = areaData.value.city_list[parseInt(data.selectedValues[1])]
+  const countyName = areaData.value.county_list[parseInt(data.selectedValues[2])]
+  // console.log(pName, cityName, countyName)
+  profile.value.fullLocation = pName + ' ' + cityName + ' ' + countyName
 }
 
 // 控制职业的弹层
