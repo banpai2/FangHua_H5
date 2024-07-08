@@ -36,3 +36,15 @@ declare interface MkUser {
   avatar: string
   account: string
 }
+// 地址的类型
+declare interface AddressItem {
+  address: string
+  contact: string
+  fullLocation: string
+  id: string
+  isDefault: 0 | 1
+  receiver: string
+  provinceCode: number
+  cityCode: number
+  countyCode: number
+}
