@@ -2,7 +2,7 @@
 import { request } from '@/api'
 import { showToast } from 'vant'
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 // 定义数据对象 绑定数据
 const addressData = ref({} as AddressItem)
@@ -39,21 +39,62 @@ const router = useRouter()
 
 // 提交数据
 const submitAddress = async () => {
-  // 提交数据
-  await request({
-    url: '/member/address',
-    method: 'post',
-    // isDefault:0 默认，1 不默认
-    data: {
-      // 展开运算符
-      // 把对象的属性和值 摊开到这里
-      ...addressData.value,
-      isDefault: addressData.value.isDefault ? 0 : 1
-    }
-  })
-  showToast('新增成功')
+  let message = ''
+  if (route.params.id) {
+    // 修改
+    await request({
+      url: '/member/address/' + route.params.id,
+      method: 'put',
+      data: {
+        ...addressData.value,
+        isDefault: addressData.value.isDefault ? 0 : 1
+      }
+    })
+    message = '修改成功'
+  } else {
+    // 新增
+
+    // 提交数据
+    await request({
+      url: '/member/address',
+      method: 'post',
+      // isDefault:0 默认，1 不默认
+      data: {
+        // 展开运算符
+        // 把对象的属性和值 摊开到这里
+        ...addressData.value,
+        isDefault: addressData.value.isDefault ? 0 : 1
+      }
+    })
+    message = '新增成功'
+  }
+  // 动态的设置信息，提示用户
+  showToast(message)
+  // 新增或修改成功之后都返回上一页
   router.back()
 }
+
+// 判断是编辑还是新增
+// useRoute 获取路由信息
+// useRouter 可以控制路由的
+const route = useRoute()
+onMounted(async () => {
+  if (route.params.id) {
+    // console.log('修改')
+    document.title = '修改地址'
+
+    // 通过接口获取数据 并填充到页面上
+    const res = await request<MkResponse<AddressItem>>({
+      url: '/member/address/' + route.params.id
+      // method:'get'
+    })
+    // console.log(res)
+    addressData.value = res.data.result
+  } else {
+    // console.log('新增')
+    document.title = '新增地址'
+  }
+})
 </script>
 
 <template>

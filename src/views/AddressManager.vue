@@ -2,16 +2,10 @@
 import { request } from '@/api'
 import { showToast } from 'vant'
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 // 列表数据
 const addressList = ref<AddressItem[]>([])
-const isRefresh = ref(false)
-// 下拉刷新
-const onRefresh = async () => {
-  await getData()
-  isRefresh.value = false
-  showToast('刷新完毕')
-}
 
 const getData = async () => {
   const res = await request<MkResponse<AddressItem[]>>({
@@ -39,19 +33,42 @@ const setDefault = async (id: string) => {
   getData()
 }
 
+// 删除数据
 const delItem = async (id: string) => {
   await request({
     url: '/member/address/' + id,
     method: 'delete'
   })
-  showToast('删除完毕')
+  showToast('删除成功')
   getData()
+}
+
+// 下拉刷新
+const isRefresh = ref(false)
+const onRefresh = async () => {
+  // setTimeout(() => {
+  // isRefresh.value = false
+  // }, 3000)
+  // 获取数据
+  await getData()
+  // 关闭加载效果
+  isRefresh.value = false
+  showToast('刷新完毕~')
+}
+
+// 去编辑页
+const router = useRouter()
+const toEdit = (id: string) => {
+  // console.log(id)
+  router.push({
+    path: '/address/edit/' + id
+  })
 }
 </script>
 
 <template>
-  <van-pull-refresh v-model="isRefresh" @refresh="onRefresh">
-    <div class="address-manager-page">
+  <div class="address-manager-page">
+    <van-pull-refresh v-model="isRefresh" @refresh="onRefresh">
       <van-swipe-cell v-for="item in addressList" :key="item.id">
         <!-- 默认的内容（默认插槽） -->
         <div class="item">
@@ -59,12 +76,18 @@ const delItem = async (id: string) => {
             <div class="item-area">
               <!-- isDefault为 0 是默认，反之不是 -->
               <span v-if="item.isDefault == 0" class="item-tag">默认</span>
+              {{ item.fullLocation }}
             </div>
             <div class="item-address">{{ item.address }}</div>
             <div class="item-connect">{{ item.receiver }} {{ item.contact }}</div>
           </div>
           <div class="item-edit">
-            <van-icon name="edit" size="20" color="var(--mk-gray)"></van-icon>
+            <van-icon
+              @click="toEdit(item.id)"
+              name="edit"
+              size="20"
+              color="var(--mk-gray)"
+            ></van-icon>
           </div>
         </div>
         <!-- 设置给滑动区域的内容（插槽有名字--具名插槽） -->
@@ -81,12 +104,13 @@ const delItem = async (id: string) => {
           />
         </template>
       </van-swipe-cell>
+    </van-pull-refresh>
 
-      <div class="submit">
-        <van-button round block type="primary" to="/address/edit"> 新建地址 </van-button>
-      </div>
+    <div class="submit">
+      <!-- to 可以实现路由的跳转效果 -->
+      <van-button round block type="primary" to="/address/edit"> 新建地址 </van-button>
     </div>
-  </van-pull-refresh>
+  </div>
 </template>
 
 <style lang="css" scoped>
