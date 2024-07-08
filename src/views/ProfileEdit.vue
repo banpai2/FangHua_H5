@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { request } from '@/api'
-import { closeToast, showLoadingToast, type ActionSheetAction } from 'vant'
+import { closeToast, showLoadingToast, showToast, type ActionSheetAction } from 'vant'
 import { onMounted } from 'vue'
 import { ref } from 'vue'
 
@@ -109,8 +109,10 @@ const columns = [
 ]
 const showJobPop = ref(false)
 const selectedJob = (data: { selectedValues: string[] }) => {
-  console.log(data.selectedValues)
+  // console.log(data.selectedValues)
   showJobPop.value = false
+  // 设置给用户的信息即可
+  profile.value.profession = data.selectedValues[0]
 }
 
 // 获取用户信息
@@ -132,6 +134,23 @@ onMounted(async () => {
   // 关闭loading
   closeToast()
 })
+
+// 修改用户信息
+const submitData = async () => {
+  // console.log(profile)
+  await request({
+    url: '/member/profile',
+    method: 'put',
+    // ref 定义的数据 通过.value 来获取
+    data: profile.value
+  })
+
+  showToast('修改成功')
+  // 更新鸿蒙端
+  const user = mk.queryUser()
+  user.nickname = profile.value.nickname
+  mk.updateUser(user)
+}
 </script>
 
 <template>
@@ -192,7 +211,7 @@ onMounted(async () => {
 
     <div class="submit">
       <!-- round圆角   block 占一行-->
-      <van-button round block type="primary"> 保存资料 </van-button>
+      <van-button @click="submitData" round block type="primary"> 保存资料 </van-button>
     </div>
   </div>
 
