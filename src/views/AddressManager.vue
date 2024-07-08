@@ -31,6 +31,15 @@ const setDefault = async (id: string) => {
   showToast('修改完毕')
   getData()
 }
+
+const delItem = async (id: string) => {
+  await request({
+    url: '/member/address/' + id,
+    method: 'delete'
+  })
+  showToast('删除完毕')
+  getData()
+}
 </script>
 
 <template>
@@ -55,7 +64,13 @@ const setDefault = async (id: string) => {
         <van-button @click="setDefault(item.id)" square type="primary" style="height: 100%">
           设为<br />默认
         </van-button>
-        <van-button square type="danger" style="height: 100%" text="删除" />
+        <van-button
+          @click="delItem(item.id)"
+          square
+          type="danger"
+          style="height: 100%"
+          text="删除"
+        />
       </template>
     </van-swipe-cell>
 
