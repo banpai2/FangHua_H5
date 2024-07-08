@@ -6,3 +6,9 @@ declare const mk: {
   pickerCamera: () => string
   vibrator: () => MkUser
 }
+// 区域数据
+declare interface AreaColumns {
+  province_list: Record<number, string>
+  city_list: Record<number, string>
+  county_list: Record<number, string>
+}
