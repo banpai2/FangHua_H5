@@ -5,6 +5,13 @@ import { onMounted, ref } from 'vue'
 
 // 列表数据
 const addressList = ref<AddressItem[]>([])
+const isRefresh = ref(false)
+// 下拉刷新
+const onRefresh = async () => {
+  await getData()
+  isRefresh.value = false
+  showToast('刷新完毕')
+}
 
 const getData = async () => {
   const res = await request<MkResponse<AddressItem[]>>({
@@ -43,41 +50,43 @@ const delItem = async (id: string) => {
 </script>
 
 <template>
-  <div class="address-manager-page">
-    <van-swipe-cell v-for="item in addressList" :key="item.id">
-      <!-- 默认的内容（默认插槽） -->
-      <div class="item">
-        <div class="item-wrapper">
-          <div class="item-area">
-            <!-- isDefault为 0 是默认，反之不是 -->
-            <span v-if="item.isDefault == 0" class="item-tag">默认</span>
+  <van-pull-refresh v-model="isRefresh" @refresh="onRefresh">
+    <div class="address-manager-page">
+      <van-swipe-cell v-for="item in addressList" :key="item.id">
+        <!-- 默认的内容（默认插槽） -->
+        <div class="item">
+          <div class="item-wrapper">
+            <div class="item-area">
+              <!-- isDefault为 0 是默认，反之不是 -->
+              <span v-if="item.isDefault == 0" class="item-tag">默认</span>
+            </div>
+            <div class="item-address">{{ item.address }}</div>
+            <div class="item-connect">{{ item.receiver }} {{ item.contact }}</div>
           </div>
-          <div class="item-address">{{ item.address }}</div>
-          <div class="item-connect">{{ item.receiver }} {{ item.contact }}</div>
+          <div class="item-edit">
+            <van-icon name="edit" size="20" color="var(--mk-gray)"></van-icon>
+          </div>
         </div>
-        <div class="item-edit">
-          <van-icon name="edit" size="20" color="var(--mk-gray)"></van-icon>
-        </div>
-      </div>
-      <!-- 设置给滑动区域的内容（插槽有名字--具名插槽） -->
-      <template #right>
-        <van-button @click="setDefault(item.id)" square type="primary" style="height: 100%">
-          设为<br />默认
-        </van-button>
-        <van-button
-          @click="delItem(item.id)"
-          square
-          type="danger"
-          style="height: 100%"
-          text="删除"
-        />
-      </template>
-    </van-swipe-cell>
+        <!-- 设置给滑动区域的内容（插槽有名字--具名插槽） -->
+        <template #right>
+          <van-button @click="setDefault(item.id)" square type="primary" style="height: 100%">
+            设为<br />默认
+          </van-button>
+          <van-button
+            @click="delItem(item.id)"
+            square
+            type="danger"
+            style="height: 100%"
+            text="删除"
+          />
+        </template>
+      </van-swipe-cell>
 
-    <div class="submit">
-      <van-button round block type="primary" to="/address/edit"> 新建地址 </van-button>
+      <div class="submit">
+        <van-button round block type="primary" to="/address/edit"> 新建地址 </van-button>
+      </div>
     </div>
-  </div>
+  </van-pull-refresh>
 </template>
 
 <style lang="css" scoped>
